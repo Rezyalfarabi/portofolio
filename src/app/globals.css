@@ -1,0 +1,558 @@
+@import "tailwindcss";
+
+/*
+ * Variant dark diikat ke data-theme, bukan ke prefers-color-scheme.
+ *
+ * Tanpa ini, utility dark: ikut prefers-color-scheme dan akan melenceng begitu
+ * orang memakai tema gelap atau terang secara manual: tombolnya berubah
+ * mengikuti sistem, sementara seluruh halaman berganti lewat data-theme. Dua
+ * sumber kebenaran untuk satu hal, dan salah satunya pasti meleset.
+ */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/*
+ * Token desain. Alasan setiap nilai ada di DESIGN.md.
+ * Merah dan biru adalah dua warna inti, kuning satu-satunya aksen (R-29).
+ *
+ * Token band dipisah dari paper/ink dengan sengaja. Motif halaman ini adalah
+ * krem Paperspec dengan pita hitam pekat, dan kalau band cuma ikut memakai
+ * --color-ink, membalik tema akan membuat pita ikut terbalik jadi krem.
+ * Identitas visualnya hilang karena pita sudah ikut jadi terang. Jadi band punya
+ * token sendiri yang tetap gelap di kedua tema: posisinya selalu di bawah
+ * warna halaman, seperti aslinya.
+ *
+ * Pita sengaja dibiarkan polos. Motif titik 1px pernah ada di sini, dan
+ *(grid 6px) itu terbaca sebagai pixel, bukan tekstur, terutama di panel gelap
+ * yang besar seperti layar pembuka. Pita polos juga lebih tenang dibaca dan
+ * teksnya tidak lagi bersaing dengan motif.
+ */
+@theme {
+  --color-paper: #f2ede0;
+  --color-paper-deep: #e8e1cf;
+  --color-ink: #141210;
+  --color-ink-soft: #4f4a44;
+  --color-primary: #d8352a;
+  --color-secondary: #1b4fa0;
+  --color-accent: #f0c020;
+  --color-on-accent: #141210;
+
+  --color-band: #141210;
+  --color-band-fg: #f2ede0;
+  --color-band-dim: rgb(242 237 224 / 0.62);
+
+  --font-display: var(--font-silkscreen), "Courier New", monospace;
+  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+
+  --shadow-hard: 6px 6px 0 var(--color-ink);
+  --shadow-hard-sm: 4px 4px 0 var(--color-ink);
+}
+
+/*
+ * Mode gelap.
+ *
+ * Hanya nilai yang berubah, tidak ada selector baru, tidak ada class
+ * conditional di komponen. Tampilan gelap adalah kebalikan dari palet
+ * terang: krem jadi tinta, tinta jadi krem, dan warna core dinaikkan
+ * lightness-nya supaya merah dan biru tetap terbaca di atas dasar gelap.
+ *
+ * Semua override ada di satu blok dan menempel pada <html> yang sama dengan
+ * :root, jadi custom property yang dirujuk token lain (--shadow-hard)
+ * ikut ter-resolve dengan nilai yang benar.
+ */
+@layer base {
+  [data-theme="dark"] {
+    --color-paper: #1b1915;
+    --color-paper-deep: #141210;
+    --color-ink: #f2ede0;
+    --color-ink-soft: #a8a097;
+    --color-primary: #f2564a;
+    --color-secondary: #7aa8f5;
+    --color-accent: #f0c020;
+    --color-on-accent: #14120f;
+
+    --color-band: #0c0b09;
+    --color-band-fg: #f2ede0;
+    --color-band-dim: rgb(242 237 224 / 0.62);
+  }
+}
+
+/* Bingkai keras 3px adalah motif identitas, jadi radius dimatikan global. */
+* {
+  border-radius: 0;
+}
+
+@utility frame {
+  border: 3px solid var(--color-ink);
+}
+
+@utility rule-t {
+  border-top: 3px solid var(--color-ink);
+}
+
+@utility rule-b {
+  border-bottom: 3px solid var(--color-ink);
+}
+
+@utility rule-l {
+  border-left: 3px solid var(--color-ink);
+}
+
+@layer base {
+  /*
+   * Form control, scrollbar, dan teks bawaan browser mengikuti color-scheme
+   * supaya widget async (tema perangkat) tidak pernah terlihat seperti milik
+   * sistem yang salah.
+   */
+  :root {
+    color-scheme: light;
+  }
+
+  [data-theme="dark"] {
+    color-scheme: dark;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    /*
+     * Jarak tempuh anchor supaya judul section tidak tertutup nav.
+     *
+     * Nilainya bukan angka tetap, tapi --nav-h yang diukur Nav dari tinggi
+     * header yang sebenarnya. Di layar kecil nav sekarang satu baris, dan
+     * angka tetap akan selalu salah kalau tinggi header berubah karena
+     * font atau zoom.
+     *
+     * Sisanya 0.5rem, jadi target berhenti sedikit di bawah nav dan tidak
+     * menempel dengannya. Tanpa JavaScript var ini tidak ada, lalu angka
+     * cadangan di bawah yang dipakai.
+     */
+    scroll-padding-top: calc(var(--nav-h, 4.75rem) + 0.5rem);
+    /*
+     * Scrollbar selalu diberi tempat. Layar pembuka mengunci scroll selama
+     * masih tampil; tanpa ini halaman melompat sedikit ke samping saat
+     * scrollbar hilang, dan itu terbaca seperti kedip.
+     */
+    scrollbar-gutter: stable;
+  }
+
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-accent);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 2px var(--color-ink);
+  }
+
+  ::selection {
+    background-color: var(--color-accent);
+    color: var(--color-on-accent);
+  }
+}
+
+@layer components {
+  /*
+   * Label meta: mono, kecil, kapital, spasi 0.14em. Untuk kategori data
+   * dan untuk nomor section.
+   */
+  .label {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  /* Judul dan nama dalam font bitmap, satu motif yang diulang. */
+  .display {
+    font-family: var(--font-display);
+    line-height: 1.08;
+    letter-spacing: 0;
+  }
+
+  .hard-shadow {
+    box-shadow: var(--shadow-hard);
+  }
+
+  /*
+   * Kursor blok di hero. Ikut loop bersama teksnya: berhenti dan mulai lagi
+   * bersama nama, bukan berkedip sendiri di teks yang sudah diam (R-19).
+   */
+  .caret {
+    animation: caret-blink 900ms steps(1) infinite;
+  }
+}
+
+/*
+ * Reveal: gerak pemicu scroll, hanya sekali per elemen.
+ *
+ * Setiap aturan tersembunyi di prefix .js, dan itu bukan sekadar kerapian.
+ * State "belum tampil" dikirim ke browser sebagai HTML server, sedangkan yang
+ * memunculkannya cuma IntersectionObserver. Tanpa prefix .js, halaman yang
+ * dibuka dengan JavaScript mati akan menyodorkan opacity 0 untuk semua Reveal
+ * dan tidak pernah bisa memunculkannya lagi: isi halaman hilang total.
+ *
+ * .js sendiri diset oleh skrip pra-paint, jadi status ini diketahui browser
+ * sebelum frame pertama digambar dan tidak pernah ada kedipan isi halaman.
+ *
+ * --reveal-delay ditulis oleh utility .stagger dan dipakai langsung di dalam
+ * shorthand transition. Menulis transition-delay di utility terpisah tidak
+ * akan berhasil: gaya di sini berada di luar layer, dan gaya tanpa layer
+ * menang atas utility apa pun yang kelihatan lebih baru.
+ */
+.js .reveal,
+.js .stagger > * {
+  opacity: 0;
+  transform: translateY(12px);
+  transition:
+    opacity 420ms ease-out var(--reveal-delay, 0ms),
+    transform 420ms ease-out var(--reveal-delay, 0ms);
+}
+
+.js .reveal[data-shown="true"],
+.js .stagger[data-shown="true"] > * {
+  opacity: 1;
+  transform: none;
+}
+
+/*
+ * Varian reveal. Satu motionset, beberapa tanda tangan berbeda supaya tiap
+ * section tidak bergerak dengan cara yang sama persis.
+ */
+.js .reveal-pop {
+  transform: scale(0.92);
+}
+
+.js .reveal-slide {
+  transform: translateX(-18px);
+}
+
+.js .reveal-wipe {
+  transform: none;
+  clip-path: inset(0 100% 0 0);
+}
+
+.js .reveal-pop[data-shown="true"],
+.js .reveal-slide[data-shown="true"] {
+  transform: none;
+}
+
+.js .reveal-wipe[data-shown="true"] {
+  transform: none;
+  clip-path: inset(0 0 0 0);
+}
+
+/*
+ * Lift dan press: umpan balik tactil untuk apa pun yang punya bingkai keras.
+ * Naiknya 3px dan bayangannya ikut tumbuh, jadi geraknya terbaca sebagai satu
+ * benda yang terangkat, bukan opacity yang berubah.
+ *
+ * :not(:disabled) dipakai di kedua keadaan, bukan di pemanggil. Tombol yang
+ * sedang mati tetap bisa hovered, dan tanpa penjaga ini tombol kirim Tanya
+ * akan tetap terangkat saat sudah tidak bisa diklik.
+ */
+@utility lift {
+  transition:
+    transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  &:hover:not(:disabled) {
+    transform: translate(-3px, -3px);
+    box-shadow: 9px 9px 0 var(--color-ink);
+  }
+
+  &:active:not(:disabled) {
+    transform: translate(0, 0);
+    box-shadow: 3px 3px 0 var(--color-ink);
+  }
+}
+
+/*
+ * Sweep: garis bawah yang menyapu dari kiri saat link hovered atau focused.
+ * Pseudo-element dipakai supaya teksnya sendiri tidak pernah bergeser.
+ */
+@utility sweep {
+  position: relative;
+
+  &::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -0.12em;
+    height: 2px;
+    width: 100%;
+    background-color: currentColor;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  &:hover::after,
+  &:focus-visible::after {
+    transform: scaleX(1);
+  }
+}
+
+/*
+ * Stagger: anak-anak langsungnya muncul bergantian.
+ *
+ * Delay ditulis sebagai custom property supaya aturan .js .reveal yang
+ * menimpanya tidak membatalkan penundaan itu. State tersembunyi ditulis di
+ * .js .stagger > *, bukan di utility ini, jadi utility ini murni memberi jeda
+ * sementara pemicunya tetap milik satu komponen saja.
+ */
+@utility stagger {
+  & > :nth-child(1) {
+    --reveal-delay: 0ms;
+  }
+  & > :nth-child(2) {
+    --reveal-delay: 70ms;
+  }
+  & > :nth-child(3) {
+    --reveal-delay: 140ms;
+  }
+  & > :nth-child(4) {
+    --reveal-delay: 210ms;
+  }
+  & > :nth-child(5) {
+    --reveal-delay: 280ms;
+  }
+  & > :nth-child(6) {
+    --reveal-delay: 350ms;
+  }
+  & > :nth-child(7) {
+    --reveal-delay: 420ms;
+  }
+  & > :nth-child(n + 8) {
+    --reveal-delay: 490ms;
+  }
+}
+
+/*
+ * Progress bar baca halaman. Hanya transform yang berubah, jadi tidak ada
+ * layout yang dihitung ulang tiap frame (R-19).
+ */
+.progress-fill {
+  transform: scaleX(0);
+  transform-origin: left;
+  will-change: transform;
+}
+
+/*
+ * Menu mobile.
+ *
+ * Yang bergerak hanya transform dan opacity, jadi membuka menu tidak
+ * mendorong isi halaman. Bar hamburger berubah ke silang lewat dua child
+ * yang berotasi, bukan lewat gambar, supaya warnanya otomatis ikut tema.
+ *
+ * Jarak 8px di bawah bukan tebakan. Dua bar setinggi 2px dengan jarak 6px
+ * punya jarak 8px antara pusatnya, dan itulah jarak yang harus dipakai supaya
+ * keduanya tepat berimpit setelah diputar 45 derajat.
+ */
+.drawer-panel {
+  animation: drawer-in 240ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+details[open] > .burger > span:first-child {
+  transform: translateY(8px) rotate(45deg);
+}
+
+details[open] > .burger > span:last-child {
+  transform: translateY(-8px) rotate(-45deg);
+}
+
+.burger > span {
+  transition: transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes drawer-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes caret-blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/*
+ * Layar pembuka.
+ *
+ * Seluruh keputusan tampil atau tidak ada di CSS, bukan di JavaScript, dan
+ * itu yang membuat dua hal ini aman: tidak ada hydration mismatch, dan halaman
+ * tetap terbuka penuh walau JavaScript mati.
+ *
+ * --intro-dur diset sekali dari komponen, jadi angka durasi hanya ada di satu
+ * tempat dan dipakai bar, percentage, dan waktu tahannya sekaligus. Tanpa itu
+ * tiga angka ini harus dijaga manual dan pasti akan menyimpang.
+ *
+ * Animasi berakhir dengan forwards supaya overlay hilang sendiri, dan
+ * visibility: hidden sekaligus membuatnya tidak lagi bisa diklik.
+ */
+.intro {
+  animation: intro-out 280ms ease-in calc(var(--intro-dur) - 280ms) forwards;
+}
+
+.intro-bar {
+  transform-origin: left;
+  animation: intro-fill var(--intro-dur) linear forwards;
+}
+
+/* Dipasang ulang tiap pergantian kata, jadi animasi masuknya ikut terulang. */
+.intro-greet {
+  animation: intro-greet 200ms ease-out both;
+}
+
+@keyframes intro-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes intro-greet {
+  from {
+    opacity: 0;
+    transform: translateY(0.28em);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes intro-out {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+/*
+ * Pita bahasa yang berjalan sendiri.
+ *
+ * Yang bergerak hanya transform, jadi tidak ada layout yang dihitung ulang tiap
+ * frame (R-19). Salinan kedua membuat lebar track tepat dua kali lebar salinan
+ * pertama, jadi menggeser -50% mendarat tepat di awal lagi tanpa lompatan.
+ *
+ * Pita sengaja berjalan terus, jadi jeda di sini adalah perilaku bawaan
+ * hover, bukan tombol. Tombol jeda sudah dihapus karena diminta, dan
+ * perlindungan yang paling penting tetap ada: prefers-reduced-motion
+ * mematikan animasinya sepenuhnya.
+ */
+.marquee-track {
+  animation: marquee-scroll 38s linear infinite;
+}
+
+.marquee:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+@keyframes marquee-scroll {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /*
+   * Pita mati total, tapi isi ribbonnya tidak hilang begitu saja: viewport
+   * berubah jadi bisa digeser, dan salinan kedua disembunyikan supaya tidak
+   * ada satu pun bahasa yang hilang dari jangkauan.
+   */
+  .marquee-viewport {
+    overflow-x: auto;
+  }
+
+  .marquee-track {
+    animation: none;
+  }
+
+  .marquee-track > [aria-hidden="true"] {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  /*
+   * Prefix .js ikut ditulis di sini, bukan hanya di blok reveal. Tanpa
+   * prefix yang sama, aturan ini (0,1,0) kalah dari .js .reveal (0,2,0) dan
+   * semua elemen ini akan tetap terkunci di opacity 0 justru untuk pengguna
+   * yang paling butuh isinya langsung terlihat.
+   */
+  .js .reveal,
+  .js .reveal-pop,
+  .js .reveal-slide,
+  .js .reveal-wipe,
+  .js .stagger > * {
+    opacity: 1;
+    transform: none;
+    clip-path: none;
+    transition: none;
+  }
+
+  .lift,
+  .sweep::after,
+  .burger > span,
+  .drawer-panel,
+  .progress-fill {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  .sweep::after {
+    transform: scaleX(1);
+  }
+
+  /*
+   * Bar progress sengaja tidak punya aturan apa pun di sini. Yang geraknya
+   * adalah posisi scroll, bukan animasi yang berjalan sendiri, jadi tidak
+   * masuk kategori yang harus dihapus. Memaksa scaleX(1) akan membuatnya
+   * selalu penuh dan kehilangan artinya.
+   */
+
+  /*
+   * Kursor berhenti berkedip, tapi teksnya tetap lengkap. Nama tidak pernah
+   * hilang hanya karena animasi dimatikan.
+   */
+  .caret {
+    animation: none;
+    opacity: 1;
+  }
+
+  /*
+   * Layar pembuka tidak dirender sama sekali untuk pengguna ini, bukan hanya
+   * dibuat tidak terlihat. display: none sudah cukup supaya tidak ada satu
+   * pun elemen yang menutupi halaman.
+   */
+  .intro {
+    display: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+  }
+}
