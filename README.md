@@ -1,4 +1,4 @@
-# Portofolio Rezy Alfarabi
+# Rezy Alfarabi — Portofolio
 
 Saya Rezy, siswa kelas XII RPL 2 di SMK Jakarta Pusat 1. Website ini adalah tempat saya menuliskan apa yang sudah saya pelajari selama berada di jurusan RPL, plus proyek-proyek kecil yang saya kerjakan. Awalnya saya cuma penasaran kenapa sebuah halaman web bisa berubah setelah tombol diklik. Rasa penasaran itu yang ujungnya jadi halaman yang sedang kamu lihat.
 
